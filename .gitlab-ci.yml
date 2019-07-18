@@ -36,6 +36,7 @@ verify code:
     - stackgres-runner
   script:
     - 'mvn $MAVEN_CLI_OPTS verify -Psafer'
+    - 'cat target/site/jacoco/index.html | grep -o "Total[^%]*%"'
 
 native-image build:
   stage: package
