@@ -36,7 +36,7 @@ git clone https://gitlab.com/ongresinc/stackgres.git
 cd stackgres
 `
 
-> You can work this configuration in any k8s cluster, we going to use a GCloud cluster.
+> You can work this configuration in any k8s cluster, we going to use a EKS cluster.
 
 ## 2.- Create the k8s cluster on aws:
 #### 2.1.- Export the variables for cluster
@@ -126,13 +126,13 @@ or
 
 ### 7.5.- Connect a PostgreSQL
 
-`kubectl exec -it stackgres-0 -c postgres-util -- psql`
+`kubectl exec -it stackgres-0 -c postgres-util -- psql -p 5435`
 
-> Note: This container have all the postgres binaries and you can use it to check PostgreSQL functionality  
+> Note: This container have all the postgres binaries and you can use it to check PostgreSQL functionality
 
 ## 8.-  Create a port-forward to access the web UI
 
-`kubectl port-forward  "$(kubectl get pods --all-namespaces -o json | jq '.items' | jq -c '.[] | select (.metadata.name | contains("stackgres-orator"))' | jq '.metadata.name' -r)" 8883:443
+`kubectl port-forward  "$(kubectl get pods --all-namespaces -o json | jq '.items' | jq -c '.[] | select (.metadata.name | contains("stackgres-operator"))' | jq '.metadata.name' -r)" 8883:443
 `
 
 ### 8.1.- Access the Web UI
@@ -144,6 +144,3 @@ helm tiller stop
 eksctl delete cluster --name $namecluster --region $region
 
 ```
-
-## 10- END
-:stuck_out_tongue:

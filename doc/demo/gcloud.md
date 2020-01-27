@@ -17,7 +17,7 @@ For the demo installation will use GCP,  therefore,  you need to install  gcloud
 
 [Gcloud](https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu?hl=en-419)
 
-# Installation and configuration of StackGres 0.7 version
+# StackGres Installation and configuration
 ## 1.- Clone StackGres repository
 
 `
@@ -28,7 +28,7 @@ cd stackgres
 > You can work this configuration in any k8s cluster, we going to use a GCloud cluster.
 
 ## 2.- Create the k8s cluster on gcloud:
-#### 2.1.- Export the variables for cluster
+#### 2.1.- Export the variables for GKE cluster
 ```
 export project        = Name you project in GCP
 export namecluster    = Name of my cluster
