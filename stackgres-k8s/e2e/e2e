@@ -2,8 +2,8 @@
 
 set -e
 
-SHELL="$(readlink /proc/$$/exe)"
-if [ "$(basename "$SHELL")" = busybox ]
+SHELL="$(readlink /proc/$$/exe || true)"
+if [ "$(basename "$SHELL")" = busybox -o -z "$SHELL" ]
 then
   SHELL=sh
 fi
