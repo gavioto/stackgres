@@ -12,7 +12,8 @@ e2e_test_install() {
       "Effect": "Allow",
       "Action": [
         "s3:PutObject",
-        "s3:GetObject"
+        "s3:GetObject",
+        "s3:DeleteObject"
       ],
       "Resource": [
         "arn:aws:s3:::stackgres-e2e/*"
@@ -126,6 +127,8 @@ spec:
   instances: 2
   postgresVersion: '12.2'
   sgInstanceProfile: size-xs
+  configurations:
+    sgBackupConfig: backupconf
   pods:
     persistentVolume:
       size: '512Mi'
