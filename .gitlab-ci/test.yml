@@ -1,22 +1,3 @@
-unit tests:
-  image: docker.io/ongres/ubi-graalvm-maven:21.0.0.2-java11
-  stage: test
-  variables:
-    # skipped due to but in quarkus junit extension initialization
-    # QUARKUS_PROFILE: "test"
-  tags:
-    - stackgres-runner
-    - stackgres-quarkus-test-runner
-    - stackgres-maven-runner
-  script:
-    - 'mvn $MAVEN_CLI_OPTS clean verify'
-  artifacts:
-    expire_in: 1 week
-    when: always
-    reports:
-      junit:
-        - stackgres-k8s/src/*/target/surefire-reports/TEST-*.xml
-
 shell unit tests:
   image: registry.gitlab.com/$CI_PROJECT_PATH/stackgres/it:13.0
   stage: test
@@ -64,11 +45,14 @@ swagger validations:
   tags:
     - stackgres-runner
   dependencies:
+    - build
     - build helm packages
     - build helm templates
   variables:
     IMAGE_TAG_SUFFIX: ""
     E2E_SUFFIX: ""
+    IS_NATIVE: "false"
+    IS_WEB: "false"
   timeout: 12 hour
   script:
     - set -e
@@ -92,10 +76,34 @@ swagger validations:
         rm -rf "$E2E_PULLED_IMAGES_PATH"
       fi
     - |
+      if "$IS_WEB"
+      then
+        E2E_TEST=ui
+      fi
       if [ -n "$E2E_TEST" ]
       then
         export E2E_ONLY_INCLUDES="$E2E_TEST"
       fi
+    - |
+      export IS_WEB
+      export IS_NATIVE
+      E2E_EXCLUDES_BY_HASH="$(flock /tmp/e2e-retrieve-pipeline-info.lock \
+        timeout -s KILL 300 \
+        sh stackgres-k8s/ci/test/e2e-already-passed-gitlab.sh)"
+      if echo "$E2E_EXCLUDES_BY_HASH" | grep -q '[^ ]'
+      then
+        echo "Excluding following tests since already passed:"
+        echo
+        printf '%s' "$E2E_EXCLUDES_BY_HASH" | tr ' ' '\n' | grep -v '^$' \
+          | while read E2E_EXCLUDED_TEST
+            do
+              printf ' - %s\n' "$E2E_EXCLUDED_TEST"
+            done
+        echo
+      fi
+      E2E_EXCLUDES="$(echo "$("$IS_WEB" || echo "ui ")$E2E_EXCLUDES $E2E_EXCLUDES_BY_HASH" | tr ' ' '\n' | sort | uniq | tr '\n' ' ')"
+      export E2E_EXCLUDES
+    - flock /tmp/e2e-retrieve-pipeline-info.lock timeout -s KILL 300 sh stackgres-k8s/ci/test/e2e-variables.sh
     - export E2E_OPERATOR_REGISTRY=$CI_REGISTRY
     - export E2E_OPERATOR_REGISTRY_PATH=/$CI_PROJECT_PATH/
     - export E2E_FORCE_IMAGE_PULL=true
@@ -114,7 +122,7 @@ swagger validations:
         flock -s /tmp/stackgres-build-jobs-native-executable \
         flock -s /tmp/stackgres-build-distributedlogs-controller-native-executable \
         flock "/tmp/stackgres-integration-test$SUFFIX" \
-        timeout -s KILL 3600 \
+        timeout -s KILL 1800 \
         "$E2E_SHELL" $SHELL_XTRACE stackgres-k8s/e2e/run-all-tests.sh
   artifacts:
     expire_in: 1 week
@@ -125,7 +133,7 @@ swagger validations:
       junit:
         - stackgres-k8s/e2e/target/e2e-tests-junit-report.xml
 
-.e2e tests jvm image:
+.e2e tests jvm:
   extends: .e2e tests
   variables:
     E2E_SUFFIX: "jvm-image"
@@ -139,13 +147,13 @@ swagger validations:
     paths:
     - stackgres-k8s/e2e/target
 
-e2e tests jvm image part 1:
-  extends: .e2e tests jvm image
+e2e tests jvm 1:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: non_exclusive:1/$E2E_JOBS
 
-e2e tests jvm image part 2:
-  extends: .e2e tests jvm image
+e2e tests jvm 2:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: non_exclusive:2/$E2E_JOBS
   except:
@@ -153,8 +161,8 @@ e2e tests jvm image part 2:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[1]$/
 
-e2e tests jvm image part 3:
-  extends: .e2e tests jvm image
+e2e tests jvm 3:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: non_exclusive:3/$E2E_JOBS
   except:
@@ -162,8 +170,8 @@ e2e tests jvm image part 3:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[12]$/
 
-e2e tests jvm image part 4:
-  extends: .e2e tests jvm image
+e2e tests jvm 4:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: non_exclusive:4/$E2E_JOBS
   except:
@@ -171,8 +179,8 @@ e2e tests jvm image part 4:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[123]$/
 
-e2e tests jvm image part 5:
-  extends: .e2e tests jvm image
+e2e tests jvm 5:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: non_exclusive:5/$E2E_JOBS
   except:
@@ -180,8 +188,8 @@ e2e tests jvm image part 5:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[1234]$/
 
-e2e tests jvm image part 6:
-  extends: .e2e tests jvm image
+e2e tests jvm 6:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: non_exclusive:6/$E2E_JOBS
   except:
@@ -189,8 +197,8 @@ e2e tests jvm image part 6:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[12345]$/
 
-e2e exclusive tests jvm image part 1:
-  extends: .e2e tests jvm image
+e2e ex tests jvm 1:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: exclusive:1/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -198,8 +206,8 @@ e2e exclusive tests jvm image part 1:
     variables:
       - $E2E_TEST
 
-e2e exclusive tests jvm image part 2:
-  extends: .e2e tests jvm image
+e2e ex tests jvm 2:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: exclusive:2/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -208,8 +216,8 @@ e2e exclusive tests jvm image part 2:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[1]$/
 
-e2e exclusive tests jvm image part 3:
-  extends: .e2e tests jvm image
+e2e ex tests jvm 3:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: exclusive:3/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -218,8 +226,8 @@ e2e exclusive tests jvm image part 3:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[12]$/
 
-e2e exclusive tests jvm image part 4:
-  extends: .e2e tests jvm image
+e2e ex tests jvm 4:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: exclusive:4/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -228,8 +236,8 @@ e2e exclusive tests jvm image part 4:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[123]$/
 
-e2e exclusive tests jvm image part 5:
-  extends: .e2e tests jvm image
+e2e ex tests jvm 5:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: exclusive:5/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -238,8 +246,8 @@ e2e exclusive tests jvm image part 5:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[1234]$/
 
-e2e exclusive tests jvm image part 6:
-  extends: .e2e tests jvm image
+e2e ex tests jvm 6:
+  extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: exclusive:6/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -248,30 +256,22 @@ e2e exclusive tests jvm image part 6:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[12345]$/
 
-e2e exclusive tests jvm image part 2:
-  extends: .e2e tests jvm image
+e2e ui tests jvm:
+  extends: .e2e tests jvm
   variables:
-    E2E_RUN_ONLY: exclusive:2/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
-  except:
-    variables:
-      - $E2E_TEST
-      - $E2E_EXCLUSIVE_JOBS =~ /^[12345]$/
-
-e2e exclusive tests jvm image part 2:
-  extends: .e2e tests jvm image
-  variables:
-    E2E_RUN_ONLY: exclusive:2/$E2E_EXCLUSIVE_JOBS
-    E2E_SKIP_OPERATOR_INSTALL: "true"
+    E2E_RUN_ONLY: ui:1/1
+    IS_WEB: "true"
   except:
     variables:
       - $E2E_TEST
 
-.e2e tests native image:
+.e2e tests native:
   extends: .e2e tests
   variables:
     E2E_SUFFIX: "native-image"
     IMAGE_TAG_SUFFIX: ""
+    IS_NATIVE: "true"
   only:
     variables:
       - $SKIP_E2E != "true" && $SKIP_NATIVE != "true" && $CI_COMMIT_REF_NAME =~ /^development.*$/
@@ -285,13 +285,13 @@ e2e exclusive tests jvm image part 2:
     paths:
     - stackgres-k8s/e2e/target
 
-e2e tests native image part 1:
-  extends: .e2e tests native image
+e2e tests native 1:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: non_exclusive:1/$E2E_JOBS
 
-e2e tests native image part 2:
-  extends: .e2e tests native image
+e2e tests native 2:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: non_exclusive:2/$E2E_JOBS
   except:
@@ -299,8 +299,8 @@ e2e tests native image part 2:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[1]$/
 
-e2e tests native image part 3:
-  extends: .e2e tests native image
+e2e tests native 3:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: non_exclusive:2/$E2E_JOBS
   except:
@@ -308,8 +308,8 @@ e2e tests native image part 3:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[12]$/
 
-e2e tests native image part 4:
-  extends: .e2e tests native image
+e2e tests native 4:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: non_exclusive:2/$E2E_JOBS
   except:
@@ -317,8 +317,8 @@ e2e tests native image part 4:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[123]$/
 
-e2e tests native image part 5:
-  extends: .e2e tests native image
+e2e tests native 5:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: non_exclusive:2/$E2E_JOBS
   except:
@@ -326,8 +326,8 @@ e2e tests native image part 5:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[1234]$/
 
-e2e tests native image part 6:
-  extends: .e2e tests native image
+e2e tests native 6:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: non_exclusive:2/$E2E_JOBS
   except:
@@ -335,8 +335,8 @@ e2e tests native image part 6:
       - $E2E_TEST
       - $E2E_JOBS =~ /^[12345]$/
 
-e2e exclusive tests native image part 1:
-  extends: .e2e tests native image
+e2e ex tests native 1:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: exclusive:1/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -344,8 +344,8 @@ e2e exclusive tests native image part 1:
     variables:
       - $E2E_TEST
 
-e2e exclusive tests native image part 2:
-  extends: .e2e tests native image
+e2e ex tests native 2:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: exclusive:2/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -354,8 +354,8 @@ e2e exclusive tests native image part 2:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[1]$/
 
-e2e exclusive tests native image part 3:
-  extends: .e2e tests native image
+e2e ex tests native 3:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: exclusive:3/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -364,8 +364,8 @@ e2e exclusive tests native image part 3:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[12]$/
 
-e2e exclusive tests native image part 4:
-  extends: .e2e tests native image
+e2e ex tests native 4:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: exclusive:4/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -374,8 +374,8 @@ e2e exclusive tests native image part 4:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[123]$/
 
-e2e exclusive tests native image part 5:
-  extends: .e2e tests native image
+e2e ex tests native 5:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: exclusive:5/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -384,8 +384,8 @@ e2e exclusive tests native image part 5:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[1234]$/
 
-e2e exclusive tests native image part 6:
-  extends: .e2e tests native image
+e2e ex tests native 6:
+  extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: exclusive:6/$E2E_EXCLUSIVE_JOBS
     E2E_SKIP_OPERATOR_INSTALL: "true"
@@ -393,3 +393,13 @@ e2e exclusive tests native image part 6:
     variables:
       - $E2E_TEST
       - $E2E_EXCLUSIVE_JOBS =~ /^[12345]$/
+
+e2e ui tests native:
+  extends: .e2e tests native
+  variables:
+    E2E_SKIP_OPERATOR_INSTALL: "true"
+    E2E_RUN_ONLY: ui:1/1
+    IS_WEB: "true"
+  except:
+    variables:
+      - $E2E_TEST

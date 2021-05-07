@@ -1,30 +1,20 @@
 
 .build native executable:
-  image: docker.io/ongres/ubi-graalvm-maven:21.0.0.2-java11
+  image: registry.gitlab.com/$CI_PROJECT_PATH/$CI_IMAGE_NAME
   stage: native build
   tags:
     - stackgres-runner
     - stackgres-native-build-runner
-  dependencies:
-    - build
   variables:
     NATIVE_IMAGE_EXTRA_PREFIX: ""
     MAVEN_EXTRA_ARGS: ""
     QUARKUS_NATIVE_NATIVE_IMAGE_XMX: 18g
   timeout: 12 hour
   script:
-    - MAVEN_CLI_OPTS="$MAVEN_CLI_OPTS -DskipTests"
     - |
       flock "/tmp/stackgres-build$NATIVE_IMAGE_EXTRA_PREFIX-native-executable" \
         timeout -s KILL 3600 \
-        mvn $MAVEN_CLI_OPTS package -P native $MAVEN_EXTRA_ARGS
-  artifacts:
-    expire_in: 1 week
-    when: always
-    paths:
-      - stackgres-k8s/src/*/target/stackgres-*-runner
-      - stackgres-k8s/src/*/target/lib/
-      - stackgres-k8s/src/*/target/stackgres-*-runner.jar
+        sh stackgres-k8s/ci/build/build-gitlab.sh "$MODULE-native"
   only:
     variables:
       - $SKIP_NATIVE != "true" && $CI_COMMIT_REF_NAME =~ /^development.*$/
@@ -37,28 +27,28 @@ build operator native executable:
   extends: .build native executable
   variables:
     NATIVE_IMAGE_EXTRA_PREFIX: "-operator"
-    MAVEN_EXTRA_ARGS: "-pl .,common,operator-framework,test-util,operator"
+    MODULE: "operator"
 
 build restapi native executable:
   extends: .build native executable
   variables:
     NATIVE_IMAGE_EXTRA_PREFIX: "-restapi"
-    MAVEN_EXTRA_ARGS: "-pl .,common,operator-framework,test-util,api-web"
+    MODULE: "restapi"
 
 build jobs native executable:
   extends: .build native executable
   variables:
     NATIVE_IMAGE_EXTRA_PREFIX: "-jobs"
-    MAVEN_EXTRA_ARGS: "-pl .,common,operator-framework,test-util,jobs"
+    MODULE: "jobs"
 
 build cluster-controller native executable:
   extends: .build native executable
   variables:
     NATIVE_IMAGE_EXTRA_PREFIX: "-cluster-controller"
-    MAVEN_EXTRA_ARGS: "-pl .,common,operator-framework,test-util,cluster-controller"
+    MODULE: "cluster-controller"
 
 build distributedlogs-controller native executable:
   extends: .build native executable
   variables:
     NATIVE_IMAGE_EXTRA_PREFIX: "-distributedlogs-controller"
-    MAVEN_EXTRA_ARGS: "-pl .,common,operator-framework,test-util,distributedlogs-controller"
+    MODULE: "distributedlogs-controller"

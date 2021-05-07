@@ -34,7 +34,7 @@ notrace_function() {
 
 if [ "$E2E_TRACE_ALL" = true ]
 then
-  echo "Everithing will be traced!"
+  [ "${SHELL_XTRACE#-}" != 'x' ] || echo "Everything will be traced!"
   notrace_function() {
     "$@"
   }
