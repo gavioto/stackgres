@@ -1,6 +1,6 @@
 
 build operator jvm image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -17,7 +17,7 @@ build operator jvm image:
     - docker push "$TARGET_OPERATOR_IMAGE_NAME"
 
 build restapi jvm image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -34,7 +34,7 @@ build restapi jvm image:
     - docker push "$TARGET_RESTAPI_IMAGE_NAME"
 
 build jobs jvm image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -51,7 +51,7 @@ build jobs jvm image:
     - docker push "$TARGET_JOBS_IMAGE_NAME"
 
 build cluster-controller jvm image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -68,7 +68,7 @@ build cluster-controller jvm image:
     - docker push "$TARGET_CLUSTER_CONTROLLER_IMAGE_NAME"
 
 build distributedlogs-controller jvm image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -85,7 +85,7 @@ build distributedlogs-controller jvm image:
     - docker push "$TARGET_DISTRIBUTEDLOGS_CONTROLLER_IMAGE_NAME"
 
 build operator native image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -109,7 +109,7 @@ build operator native image:
       - $DO_NATIVE
 
 build restapi native image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -133,7 +133,7 @@ build restapi native image:
       - $DO_NATIVE
 
 build jobs native image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -157,7 +157,7 @@ build jobs native image:
       - $DO_NATIVE
 
 build cluster-controller native image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -181,7 +181,7 @@ build cluster-controller native image:
       - $DO_NATIVE
 
 build distributedlogs-controller native image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
@@ -205,7 +205,7 @@ build distributedlogs-controller native image:
       - $DO_NATIVE
 
 build admin-ui image:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_IMAGE_NAME
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$BUILD_IMAGE_NAME
   stage: image build
   tags:
     - stackgres-runner
