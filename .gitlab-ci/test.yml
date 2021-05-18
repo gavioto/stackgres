@@ -1,5 +1,5 @@
 shell unit tests:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/stackgres/it:13.0
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$IT_IMAGE_NAME
   stage: test
   tags:
     - stackgres-runner
@@ -26,7 +26,7 @@ shell unit tests:
         - stackgres-k8s/src/operator/target/shell/shell-unit-tests-junit-report-*.xml
 
 swagger validations:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/stackgres/it:13.0
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$IT_IMAGE_NAME
   stage: test
   tags:
     - stackgres-runner
@@ -41,7 +41,7 @@ swagger validations:
 
 .e2e tests:
   stage: test
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/stackgres/it:13.0
+  image: $CI_REGISTRY/$CI_PROJECT_PATH/$IT_IMAGE_NAME
   tags:
     - stackgres-runner
   dependencies:
@@ -61,7 +61,8 @@ swagger validations:
     - test "$DEBUG" != true || set -x
     - SUFFIX="$(echo "-$E2E_SUFFIX-$E2E_RUN_ONLY" | tr -d '\n' | tr -c 'a-z0-9' '-' | sed 's/\(-[0-9]\+\)-[0-9]\+$/\1/')"
     - SHELL_XTRACE="$([ "$E2E_DEBUG" = true ] && echo "-x" || echo "")"
-    - export IMAGE_TAG="${CI_COMMIT_TAG:-"$CI_COMMIT_SHORT_SHA"}$IMAGE_TAG_SUFFIX"
+    - export IMAGE_TAG_BASE="${CI_COMMIT_TAG:-"$CI_COMMIT_SHORT_SHA"}"
+    - export IMAGE_TAG="$IMAGE_TAG_BASE$IMAGE_TAG_SUFFIX"
     - export KIND_NAME="kind$SUFFIX"
     - export K8S_REUSE="${K8S_REUSE:-true}"
     - export K8S_FROM_DIND=true
@@ -80,13 +81,26 @@ swagger validations:
       fi
     - export KIND_LOCK_PATH="/tmp/kind-lock$SUFFIX"
     - export KIND_CONTAINERD_CACHE_PATH="/tmp/kind-cache/$KIND_NAME"
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - rm -rf "/tmp/kind-cache/$KIND_NAME"
-    - cp --reflink -r /tmp/kind-cache/kind-base "/tmp/kind-cache/$KIND_NAME"
     - |
       if [ "$E2E_CLEAN_IMAGE_CACHE" = "true" ]
       then
         rm -rf "$E2E_PULLED_IMAGES_PATH"
+      fi
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - |
+      if docker manifest inspect \
+        "$CI_REGISTRY/$CI_PROJECT_PATH/stackgres/operator:$IMAGE_TAG_BASE" >/dev/null 2>&1
+      then
+        IMAGE_TAGS="$IMAGE_TAG_BASE-jvm $IMAGE_TAG_BASE"
+      else
+        IMAGE_TAGS="$IMAGE_TAG_BASE-jvm"
+      fi
+      if sh stackgres-k8s/ci/test/e2e-shared-cache-requires-reset.sh
+      then
+        flock /tmp/e2e-create-kind-cache-base \
+          sh stackgres-k8s/ci/test/e2e-create-kind-cache-base.sh
+      else
+        sh stackgres-k8s/ci/test/e2e-create-kind-cache-base.sh
       fi
     - |
       if "$IS_WEB"
@@ -119,7 +133,8 @@ swagger validations:
     - flock /tmp/e2e-retrieve-pipeline-info.lock timeout -s KILL 300 sh stackgres-k8s/ci/test/e2e-variables.sh || true
     - |
       unset DEBUG
-      flock -s /tmp/stackgres-build-operator-native-executable \
+      flock -s /tmp/e2e-create-kind-cache-base \
+        flock -s /tmp/stackgres-build-operator-native-executable \
         flock -s /tmp/stackgres-build-restapi-native-executable \
         flock -s /tmp/stackgres-build-jobs-native-executable \
         flock -s /tmp/stackgres-build-distributedlogs-controller-native-executable \
