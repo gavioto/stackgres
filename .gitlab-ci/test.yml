@@ -80,7 +80,6 @@ swagger validations:
         export E2E_SPEC_TRY_UNINSTALL_ON_FAILURE=true
       fi
     - export KIND_LOCK_PATH="/tmp/kind-lock$SUFFIX"
-    - export KIND_CONTAINERD_CACHE_PATH="/tmp/kind-cache/$KIND_NAME"
     - |
       if [ "$E2E_CLEAN_IMAGE_CACHE" = "true" ]
       then
@@ -100,8 +99,18 @@ swagger validations:
         flock /tmp/e2e-create-kind-cache-base \
           sh stackgres-k8s/ci/test/e2e-create-kind-cache-base.sh
       else
-        sh stackgres-k8s/ci/test/e2e-create-kind-cache-base.sh
+        flock "$KIND_LOCK_PATH" \
+          sh stackgres-k8s/ci/test/e2e-create-kind-cache-base.sh
       fi
+      if [ "${KIND_CONTAINERD_CACHE_SHARED_TYPE:-disabled}" = disabled ]
+      then
+        KIND_CONTAINERD_CACHE_PATH="/tmp/kind-cache/kind-$(cat /tmp/kind-cache-index)"
+        KIND_CONTAINERD_CACHE_LOCK_PATH="/tmp/kind-cache/kind-lock-$(cat /tmp/kind-cache-index)"
+      else
+        KIND_CONTAINERD_CACHE_PATH="/tmp/kind-cache/$KIND_NAME"
+        KIND_CONTAINERD_CACHE_LOCK_PATH="/tmp/kind-cache-lock$SUFFIX"
+      fi
+      export KIND_CONTAINERD_CACHE_PATH
     - |
       if "$IS_WEB"
       then
@@ -138,7 +147,8 @@ swagger validations:
         flock -s /tmp/stackgres-build-restapi-native-executable \
         flock -s /tmp/stackgres-build-jobs-native-executable \
         flock -s /tmp/stackgres-build-distributedlogs-controller-native-executable \
-        flock "/tmp/stackgres-integration-test$SUFFIX" \
+        flock "$KIND_LOCK_PATH" \
+        flock "$KIND_CONTAINERD_CACHE_LOCK_PATH" \
         timeout -s KILL 1800 \
         "$E2E_SHELL" $SHELL_XTRACE stackgres-k8s/e2e/run-all-tests.sh
   artifacts:
