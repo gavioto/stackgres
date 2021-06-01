@@ -79,6 +79,7 @@ swagger validations:
         export K8S_DELETE=true
         export E2E_SPEC_TRY_UNINSTALL_ON_FAILURE=true
       fi
+    - export E2E_LOCK_PATH="/tmp/e2e-lock$SUFFIX"
     - export KIND_LOCK_PATH="/tmp/kind-lock$SUFFIX"
     - |
       if [ "$E2E_CLEAN_IMAGE_CACHE" = "true" ]
@@ -99,7 +100,7 @@ swagger validations:
         flock /tmp/e2e-create-kind-cache-base \
           sh stackgres-k8s/ci/test/e2e-create-kind-cache-base.sh
       else
-        flock "$KIND_LOCK_PATH" \
+        flock "$E2E_LOCK_PATH" \
           sh stackgres-k8s/ci/test/e2e-create-kind-cache-base.sh
       fi
       export KIND_CONTAINERD_CACHE_PATH="/tmp/kind-cache/$KIND_NAME"
@@ -139,7 +140,7 @@ swagger validations:
         flock -s /tmp/stackgres-build-restapi-native-executable \
         flock -s /tmp/stackgres-build-jobs-native-executable \
         flock -s /tmp/stackgres-build-distributedlogs-controller-native-executable \
-        flock "$KIND_LOCK_PATH" \
+        flock "$E2E_LOCK_PATH" \
         timeout -s KILL 1800 \
         "$E2E_SHELL" $SHELL_XTRACE stackgres-k8s/e2e/run-all-tests.sh
   artifacts:
