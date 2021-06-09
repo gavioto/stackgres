@@ -34,7 +34,7 @@ swagger validations:
     - |
       yajsv -s stackgres-k8s/src/api-web/src/main/swagger/schema.json stackgres-k8s/src/api-web/target/swagger-merged.json
   dependencies:
-    - build
+    - build restapi
   artifacts:
     expire_in: 1 week
     when: always
