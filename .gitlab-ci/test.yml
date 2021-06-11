@@ -76,9 +76,6 @@ swagger validations:
     - export E2E_LOCK_PATH="/tmp/e2e-lock$SUFFIX"
     - export KIND_LOCK_PATH="/tmp/kind-lock$SUFFIX"
     - export KIND_CONTAINERD_CACHE_PATH="/tmp/kind-cache/$KIND_NAME"
-    - export KIND_CONTAINERD_SHARED_CACHE_RUN_ID="$CI_PIPELINE_ID"
-    - export KIND_CONTAINERD_SHARED_CACHE_PATH=/tmp/kind-cache
-    - export KIND_CONTAINERD_SHARED_CACHE_EXTRA_IMAGES_FILE=/tmp/pulled-images*
     - |
       if [ "$K8S_REUSE" = false ]
       then
@@ -89,14 +86,6 @@ swagger validations:
       if [ "$E2E_CLEAN_IMAGE_CACHE" = "true" ]
       then
         rm -rf "$E2E_PULLED_IMAGES_PATH"
-      fi
-    - |
-      if docker manifest inspect \
-        "$CI_REGISTRY/$CI_PROJECT_PATH/stackgres/operator:$IMAGE_TAG_BASE" >/dev/null 2>&1
-      then
-        export KIND_CONTAINERD_SHARED_CACHE_IMAGE_TAGS="$IMAGE_TAG_BASE-jvm $IMAGE_TAG_BASE"
-      else
-        export KIND_CONTAINERD_SHARED_CACHE_IMAGE_TAGS="$IMAGE_TAG_BASE-jvm"
       fi
     - |
       if "$IS_WEB"
