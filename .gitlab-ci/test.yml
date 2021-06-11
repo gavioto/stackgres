@@ -165,6 +165,9 @@ e2e tests jvm 1:
   extends: .e2e tests jvm
   variables:
     E2E_RUN_ONLY: non_exclusive:1/$E2E_JOBS
+  except:
+    variables:
+      - $E2E_TEST == "ui"
 
 e2e tests jvm 2:
   extends: .e2e tests jvm
@@ -278,7 +281,7 @@ e2e ui tests jvm:
     IS_WEB: "true"
   except:
     variables:
-      - $E2E_TEST
+      - $E2E_TEST && $E2E_TEST != "ui"
 
 .e2e tests native:
   extends: .e2e tests
@@ -303,6 +306,9 @@ e2e tests native 1:
   extends: .e2e tests native
   variables:
     E2E_RUN_ONLY: non_exclusive:1/$E2E_JOBS
+  except:
+    variables:
+      - $E2E_TEST == "ui"
 
 e2e tests native 2:
   extends: .e2e tests native
@@ -416,4 +422,4 @@ e2e ui tests native:
     IS_WEB: "true"
   except:
     variables:
-      - $E2E_TEST
+      - $E2E_TEST && $E2E_TEST != "ui"
