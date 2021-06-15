@@ -382,7 +382,7 @@
                   <images>
                     <image>
                       <alias>kind-load</alias>
-                      <name>${it.image}</name>
+                      <name>${ci.image}</name>
                       <run>
                         <entrypoint>
                           <arg>/bin/sh</arg>
@@ -443,7 +443,7 @@
                   <images>
                     <image>
                       <alias>kind-load</alias>
-                      <name>${it.image}</name>
+                      <name>${ci.image}</name>
                       <run>
                         <entrypoint>
                           <arg>/bin/sh</arg>
