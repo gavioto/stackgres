@@ -34,7 +34,7 @@ swagger validations:
     - |
       yajsv -s stackgres-k8s/src/api-web/src/main/swagger/schema.json stackgres-k8s/src/api-web/target/swagger-merged.json
   dependencies:
-    - build restapi
+    - build
   artifacts:
     expire_in: 1 week
     when: always
@@ -50,6 +50,9 @@ swagger validations:
     IS_NATIVE: "false"
     IS_WEB: "false"
   timeout: 12 hour
+  dependencies:
+    - build helm packages
+    - build helm templates
   script:
     - set -e
     - test "$E2E_JOBS" -ge 1 && test "$E2E_JOBS" -le 6
@@ -113,8 +116,6 @@ swagger validations:
       export E2E_EXCLUDES
     - flock /tmp/e2e-retrieve-pipeline-info.lock timeout -s KILL 300 sh stackgres-k8s/ci/test/e2e-variables.sh || true
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - sh stackgres-k8s/ci/build/build-gitlab.sh extract helm-packages stackgres-k8s/install/helm/template/packages
-    - sh stackgres-k8s/ci/build/build-gitlab.sh extract helm-templates stackgres-k8s/install/helm/template/templates
     - |
       unset DEBUG
       flock -s /tmp/e2e-create-kind-cache-base \
