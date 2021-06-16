@@ -9,9 +9,15 @@ build:
       sh stackgres-k8s/ci/build/build-gitlab.sh build \
         --copy stackgres-k8s/src/.mvn \
         --copy .m2/repository \
-        --extract operator-framework:'stackgres-k8s/src/operator-framework/target/surefire-reports/TEST-*.xml' \
-        --extract common:'stackgres-k8s/src/common/target/surefire-reports/TEST-*.xml' \
-        stackgres-parent operator-framework test-util common
+        --extract stackgres:'stackgres-k8s/src/operator-framework/target/surefire-reports/TEST-*.xml' \
+        --extract stackgres:'stackgres-k8s/src/common/target/surefire-reports/TEST-*.xml' \
+        --extract stackgres:'stackgres-k8s/src/operator/target/surefire-reports/TEST-*.xml' \
+        --extract stackgres:'stackgres-k8s/src/api-web/target/surefire-reports/TEST-*.xml' \
+        --extract stackgres:'stackgres-k8s/src/jobs/target/surefire-reports/TEST-*.xml' \
+        --extract stackgres:'stackgres-k8s/src/cluster-controller/target/surefire-reports/TEST-*.xml' \
+        --extract stackgres:'stackgres-k8s/src/distributedlogs-controller/target/surefire-reports/TEST-*.xml' \
+        --extract restapi:'stackgres-k8s/src/api-web/target/swagger*' \
+        stackgres
   cache:
     paths:
       - .m2/repository
@@ -23,96 +29,11 @@ build:
       junit:
         - stackgres-k8s/ci/build/target/junit-build.hashes.xml
         - stackgres-k8s/src/*/target/surefire-reports/TEST-*.xml
-
-build operator:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$SG_CI_IMAGE_NAME
-  stage: build 2
-  tags:
-    - stackgres-runner
-  script:
-    - |
-      sh stackgres-k8s/ci/build/build-gitlab.sh build \
-        --copy .m2/repository \
-        --extract operator:'stackgres-k8s/src/operator/target/surefire-reports/TEST-*.xml' \
-        operator
-  cache:
-    paths:
-      - .m2/repository
-      - stackgres-k8s/src/.mvn
-
-build restapi:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$SG_CI_IMAGE_NAME
-  stage: build 2
-  tags:
-    - stackgres-runner
-  script:
-    - |
-      sh stackgres-k8s/ci/build/build-gitlab.sh build \
-        --copy .m2/repository \
-        --extract restapi:'stackgres-k8s/src/operator/target/surefire-reports/TEST-*.xml' \
-        --extract restapi:'stackgres-k8s/src/api-web/target/swagger*' \
-        restapi
-  cache:
-    paths:
-      - .m2/repository
-      - stackgres-k8s/src/.mvn
-  artifacts:
-    expire_in: 1 week
-    when: always
-    paths:
-      - stackgres-k8s/src/api-web/target/swagger*
-
-build jobs:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$SG_CI_IMAGE_NAME
-  stage: build 2
-  tags:
-    - stackgres-runner
-  script:
-    - |
-      sh stackgres-k8s/ci/build/build-gitlab.sh build \
-        --copy .m2/repository \
-        --extract jobs:'stackgres-k8s/src/jobs/target/surefire-reports/TEST-*.xml' \
-        jobs
-  cache:
-    paths:
-      - .m2/repository
-      - stackgres-k8s/src/.mvn
-
-build cluster-controller:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$SG_CI_IMAGE_NAME
-  stage: build 2
-  tags:
-    - stackgres-runner
-  script:
-    - |
-      sh stackgres-k8s/ci/build/build-gitlab.sh build \
-        --copy .m2/repository \
-        --extract cluster-controller:'stackgres-k8s/src/cluster-controller/target/surefire-reports/TEST-*.xml' \
-        cluster-controller
-  cache:
-    paths:
-      - .m2/repository
-      - stackgres-k8s/src/.mvn
-
-build distributedlogs-controller:
-  image: $CI_REGISTRY/$CI_PROJECT_PATH/$SG_CI_IMAGE_NAME
-  stage: build 2
-  tags:
-    - stackgres-runner
-  script:
-    - |
-      sh stackgres-k8s/ci/build/build-gitlab.sh build \
-        --copy .m2/repository \
-        --extract distributedlogs-controller:'stackgres-k8s/src/distributedlogs-controller/target/surefire-reports/TEST-*.xml' \
-        distributedlogs-controller
-  cache:
-    paths:
-      - .m2/repository
-      - stackgres-k8s/src/.mvn
+        - stackgres-k8s/src/api-web/target/swagger*
 
 build ui:
   image: $CI_REGISTRY/$CI_PROJECT_PATH/$SG_CI_IMAGE_NAME
-  stage: build 3
+  stage: build 2
   tags:
     - stackgres-runner
   script:
@@ -129,7 +50,7 @@ build documentation:
   image:
     name: klakegg/hugo:0.81.0-ubuntu
     entrypoint: [ "" ]
-  stage: build 3
+  stage: build 2
   dependencies:
     - build restapi
   script:
@@ -170,7 +91,7 @@ build documentation:
 
 build helm packages:
   image: $CI_REGISTRY/$CI_PROJECT_PATH/$SG_CI_IMAGE_NAME
-  stage: build 3
+  stage: build 2
   tags:
     - stackgres-runner
   script:
@@ -178,7 +99,7 @@ build helm packages:
 
 build helm templates:
   image: $CI_REGISTRY/$CI_PROJECT_PATH/$SG_CI_IMAGE_NAME
-  stage: build 3
+  stage: build 2
   tags:
     - stackgres-runner
   script:
