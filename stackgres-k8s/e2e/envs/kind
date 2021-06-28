@@ -5,10 +5,10 @@ KIND_NODES="${KIND_NODES:-1}"
 KIND_LOCK_PATH="${KIND_LOCK_PATH:-$TARGET_PATH/kind-lock}"
 
 check_kind_version() {
-  if ! kind version | grep -q -F 'kind v0.9.0 '
+  if ! kind version | grep -q -F 'kind v0.11.0 '
   then
-    echo "kind v0.9.0 is required"
-    return 1
+    echo "kind v0.11.0 is required"
+    # return 1
   fi
 }
 
