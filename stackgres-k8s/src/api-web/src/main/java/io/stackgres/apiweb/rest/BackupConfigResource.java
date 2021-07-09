@@ -72,7 +72,6 @@ public class BackupConfigResource extends
   @Override
   public List<BackupConfigDto> list() {
     return Seq.seq(super.list())
-        .map(this::setSecrets)
         .toList();
   }
 
@@ -88,7 +87,6 @@ public class BackupConfigResource extends
   @Override
   public BackupConfigDto get(String namespace, String name) {
     return Optional.of(super.get(namespace, name))
-        .map(this::setSecrets)
         .get();
   }
 
@@ -130,24 +128,6 @@ public class BackupConfigResource extends
     setSecretKeySelectors(resource);
     createOrUpdateSecret(resource);
     super.update(resource);
-  }
-
-  private BackupConfigDto setSecrets(BackupConfigDto resource) {
-    final String namespace = resource.getMetadata().getNamespace();
-    util.extractSecretInfo(resource)
-        .filter(t -> t.v2.v3 != null)
-        .grouped(t -> t.v2.v3.getName())
-        .flatMap(t -> {
-          Optional<Map<String, String>> secrets = secretFinder
-              .findByNameAndNamespace(t.v1, namespace)
-              .map(Secret::getData);
-          return secrets
-              .map(s -> t.v2.map(tt -> Tuple.tuple(
-                  ResourceUtil.decodeSecret(s.get(tt.v2.v3.getKey())), tt.v2.v2)))
-              .orElse(Seq.empty());
-        })
-        .forEach(t -> t.v2.accept(t.v1));
-    return resource;
   }
 
   private void setSecretKeySelectors(BackupConfigDto resource) {

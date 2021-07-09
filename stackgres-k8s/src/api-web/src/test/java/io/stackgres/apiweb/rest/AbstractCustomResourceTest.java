@@ -83,15 +83,12 @@ public abstract class AbstractCustomResourceTest<T extends ResourceDto, R extend
 
   @Test
   void createShouldNotFail() {
-    doAnswer(new Answer<Void>() {
-      @Override
-      public Void answer(InvocationOnMock invocation) throws Throwable {
-        R customResource = invocation.getArgument(0);
+    doAnswer((Answer<Void>) invocation -> {
+      R customResource = invocation.getArgument(0);
 
-        checkCustomResource(customResource, dto, Operation.CREATE);
+      checkCustomResource(customResource, dto, Operation.CREATE);
 
-        return null;
-      }
+      return null;
     }).when(scheduler).create(any());
 
     service.create(dto);
@@ -102,15 +99,12 @@ public abstract class AbstractCustomResourceTest<T extends ResourceDto, R extend
     when(finder.findByNameAndNamespace(anyString(), anyString())).thenReturn(
         customResources.getItems().stream().findFirst());
 
-    doAnswer(new Answer<Void>() {
-      @Override
-      public Void answer(InvocationOnMock invocation) throws Throwable {
-        R customResource = invocation.getArgument(0);
+    doAnswer((Answer<Void>) invocation -> {
+      R customResource = invocation.getArgument(0);
 
-        checkCustomResource(customResource, dto, Operation.UPDATE);
+      checkCustomResource(customResource, dto, Operation.UPDATE);
 
-        return null;
-      }
+      return null;
     }).when(scheduler).update(any());
 
     service.update(dto);
