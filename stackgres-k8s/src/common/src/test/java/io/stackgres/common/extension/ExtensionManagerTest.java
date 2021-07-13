@@ -170,7 +170,7 @@ public class ExtensionManagerTest {
     when(webClient.getInputStream(any()))
         .then(invocation -> getClass().getResourceAsStream("/test.tar"));
     StackGresCluster cluster = getCluster();
-    StackGresClusterExtension extension = getClusterExtension();
+    StackGresClusterInstalledExtension extension = getInstalledExtension();
     extensionManager.getExtensionInstaller(context(cluster), extension).downloadAndExtract();
     verify(webClientFactory, times(2)).create(anyBoolean());
     verify(webClient, times(1)).getJson(any(), any());
@@ -206,7 +206,7 @@ public class ExtensionManagerTest {
   @Test
   void testVerifyExtension() throws Exception {
     StackGresCluster cluster = getCluster();
-    StackGresClusterExtension extension = getClusterExtension();
+    StackGresClusterInstalledExtension extension = getInstalledExtension();
     when(webClientFactory.create(anyBoolean())).thenReturn(webClient);
     when(webClient.getJson(any(), any())).thenReturn(getExtensions());
     final String extensionPackageName = ExtensionUtil.getExtensionPackageName(getInstalledExtension());
@@ -243,7 +243,7 @@ public class ExtensionManagerTest {
   @Test
   void testInstallExtension() throws Exception {
     StackGresCluster cluster = getCluster();
-    StackGresClusterExtension extension = getClusterExtension();
+    StackGresClusterInstalledExtension extension = getInstalledExtension();
     when(webClientFactory.create(anyBoolean())).thenReturn(webClient);
     when(webClient.getJson(any(), any())).thenReturn(getExtensions());
     final String extensionPackageName = ExtensionUtil.getExtensionPackageName(getInstalledExtension());
@@ -255,10 +255,8 @@ public class ExtensionManagerTest {
         .list(eq(Paths.get(ClusterStatefulSetPath.PG_EXTENSIONS_LIB_PATH.path(context(cluster))))))
         .thenReturn(Stream.of(Paths.get(ClusterStatefulSetPath.PG_EXTENSIONS_LIB_PATH.path(context(cluster)))
             .resolve("test.so")));
-    StackGresClusterInstalledExtension installedExtension = getInstalledExtension();
     ExtensionInstaller extensionInstaller = extensionManager.getExtensionInstaller(context(cluster), extension);
     extensionInstaller.installExtension();
-    Assertions.assertEquals(installedExtension, extensionInstaller.getInstalledExtension());
     verify(webClientFactory, times(1)).create(anyBoolean());
     verify(webClient, times(1)).getJson(any(), any());
     verify(webClient, times(1)).getJson(
@@ -451,7 +449,7 @@ public class ExtensionManagerTest {
   @Test
   void testCheckExtensionWillNotOverwrite() throws Exception {
     StackGresCluster cluster = getCluster();
-    StackGresClusterExtension extension = getClusterExtension();
+    StackGresClusterInstalledExtension extension = getInstalledExtension();
     when(webClientFactory.create(anyBoolean())).thenReturn(webClient);
     when(webClient.getJson(any(), any())).thenReturn(getExtensions());
     final String extensionPackageName = ExtensionUtil.getExtensionPackageName(getInstalledExtension());
@@ -486,7 +484,7 @@ public class ExtensionManagerTest {
   @Test
   void testCheckExtensionWillOverwrite() throws Exception {
     StackGresCluster cluster = getCluster();
-    StackGresClusterExtension extension = getClusterExtension();
+    StackGresClusterInstalledExtension extension = getInstalledExtension();
     when(webClientFactory.create(anyBoolean())).thenReturn(webClient);
     when(webClient.getJson(any(), any())).thenReturn(getExtensions());
     final String extensionPackageName = ExtensionUtil.getExtensionPackageName(getInstalledExtension());
@@ -525,7 +523,7 @@ public class ExtensionManagerTest {
     when(webClientFactory.create(anyBoolean())).thenReturn(webClient);
     when(webClient.getJson(any(), any())).thenReturn(getExtensions());
     StackGresCluster cluster = getCluster();
-    StackGresClusterExtension extension = getClusterExtension();
+    StackGresClusterInstalledExtension extension = getInstalledExtension();
     Assertions.assertFalse(
         extensionManager.getExtensionInstaller(context(cluster), extension).isExtensionPendingOverwrite());
     verify(webClientFactory, times(1)).create(anyBoolean());
@@ -546,7 +544,7 @@ public class ExtensionManagerTest {
   @Test
   void testIsExtensionPending() throws Exception {
     StackGresCluster cluster = getCluster();
-    StackGresClusterExtension extension = getClusterExtension();
+    StackGresClusterInstalledExtension extension = getInstalledExtension();
     when(webClientFactory.create(anyBoolean())).thenReturn(webClient);
     when(webClient.getJson(any(), any())).thenReturn(getExtensions());
     final String extensionPackageName = ExtensionUtil.getExtensionPackageName(getInstalledExtension());
@@ -574,14 +572,12 @@ public class ExtensionManagerTest {
   @Test
   void testSetExtensionAsPending() throws Exception {
     StackGresCluster cluster = getCluster();
-    StackGresClusterExtension extension = getClusterExtension();
+    StackGresClusterInstalledExtension extension = getInstalledExtension();
     when(webClientFactory.create(anyBoolean())).thenReturn(webClient);
     when(webClient.getJson(any(), any())).thenReturn(getExtensions());
     final String extensionPackageName = ExtensionUtil.getExtensionPackageName(getInstalledExtension());
-    StackGresClusterInstalledExtension installedExtension = getInstalledExtension();
     ExtensionInstaller extensionInstaller = extensionManager.getExtensionInstaller(context(cluster), extension);
     extensionInstaller.setExtensionAsPending();
-    Assertions.assertEquals(installedExtension, extensionInstaller.getInstalledExtension());
     verify(webClientFactory, times(1)).create(anyBoolean());
     verify(webClient, times(1)).getJson(any(), any());
     verify(webClient, times(1)).getJson(
