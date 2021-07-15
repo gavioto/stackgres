@@ -21,14 +21,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.quarkus.security.Authenticated;
 import io.stackgres.apiweb.dto.event.EventDto;
 import io.stackgres.apiweb.dto.event.ObjectReference;
-import io.stackgres.common.crd.sgcluster.StackGresCluster;
 import io.stackgres.common.crd.sgdbops.StackGresDbOps;
-import io.stackgres.common.resource.CustomResourceScanner;
 import io.stackgres.common.resource.ResourceScanner;
-import io.stackgres.common.resource.ResourceUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -36,20 +35,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.jooq.lambda.Seq;
 
-@Path("/stackgres/sgcluster/events")
+@Path("/stackgres/sgdbops/events")
 @RequestScoped
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class ClusterEventsResource {
+public class DbOpsEventsResource {
 
   private final ResourceScanner<EventDto> scanner;
-  private final CustomResourceScanner<StackGresDbOps> dbOpsScanner;
+  private final ResourceScanner<Job> jobScanner;
+  private final ResourceScanner<Pod> podScanner;
 
   @Inject
-  public ClusterEventsResource(ResourceScanner<EventDto> scanner,
-      CustomResourceScanner<StackGresDbOps> dbOpsScanner) {
+  public DbOpsEventsResource(ResourceScanner<EventDto> scanner,
+      ResourceScanner<Job> jobScanner,
+      ResourceScanner<Pod> podScanner) {
     this.scanner = scanner;
-    this.dbOpsScanner = dbOpsScanner;
+    this.jobScanner = jobScanner;
+    this.podScanner = podScanner;
   }
 
   @Operation(
@@ -66,29 +68,35 @@ public class ClusterEventsResource {
   public List<EventDto> list(@PathParam("namespace") String namespace,
       @PathParam("name") String name) {
     Map<String, List<ObjectMeta>> relatedResources = new HashMap<>();
-    relatedResources.put(StackGresDbOps.KIND,
-        Seq.seq(dbOpsScanner.getResources(namespace))
-        .filter(dbOps -> dbOps.getSpec().getSgCluster().equals(name))
-        .map(StackGresDbOps::getMetadata)
+    relatedResources.put("Job",
+        Seq.seq(jobScanner.findResourcesInNamespace(namespace))
+        .filter(job -> job.getMetadata().getOwnerReferences().stream()
+            .anyMatch(resourceReference -> resourceReference.getKind().equals(StackGresDbOps.KIND)
+                && resourceReference.getName().equals(name)))
+        .map(Job::getMetadata)
+        .toList());
+    relatedResources.put("Pod",
+        Seq.seq(podScanner.findResourcesInNamespace(namespace))
+        .filter(pod -> pod.getMetadata().getOwnerReferences().stream()
+            .anyMatch(resourceReference -> resourceReference.getKind().equals("Job")
+                && relatedResources.get("Job").stream().anyMatch(
+                   jobMetadata -> jobMetadata.getName().equals(resourceReference.getName()))))
+        .map(Pod::getMetadata)
         .toList());
     return Seq.seq(scanner.findResourcesInNamespace(namespace))
-        .filter(event -> isClusterEvent(event, namespace, name, relatedResources))
+        .filter(event -> isDbOpsEvent(event, namespace, name, relatedResources))
         .sorted(this::orderByLastTimestamp)
         .toList();
   }
 
-  private boolean isClusterEvent(EventDto event, String namespace, String name,
+  private boolean isDbOpsEvent(EventDto event, String namespace, String name,
       Map<String, List<ObjectMeta>> relatedResources) {
     ObjectReference involvedObject = event.getInvolvedObject();
     return involvedObject.getNamespace().equals(namespace)
-        && ((involvedObject.getKind().equals(StackGresCluster.KIND)
+        && ((involvedObject.getKind().equals(StackGresDbOps.KIND)
             && involvedObject.getName().equals(name))
-            || (involvedObject.getKind().equals("StatefulSet")
-                && involvedObject.getName().equals(name))
-            || (involvedObject.getKind().equals("Pod")
-                && involvedObject.getName().matches(ResourceUtil.getNameWithIndexPattern(name)))
             || (Optional.ofNullable(relatedResources.get(involvedObject.getKind()))
-                .stream().flatMap(relatedResource -> relatedResource.stream())
+                .stream().flatMap(List::stream)
                 .anyMatch(relatedResource -> relatedResource.getNamespace()
                     .equals(involvedObject.getNamespace())
                     && relatedResource.getName().equals(involvedObject.getName())
