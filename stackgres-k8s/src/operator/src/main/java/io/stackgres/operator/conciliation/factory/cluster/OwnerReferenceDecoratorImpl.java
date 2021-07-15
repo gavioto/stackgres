@@ -17,6 +17,7 @@ import io.stackgres.common.resource.ResourceUtil;
 import io.stackgres.operator.conciliation.OperatorVersionBinder;
 import io.stackgres.operator.conciliation.cluster.StackGresVersion;
 import io.stackgres.operator.conciliation.factory.Decorator;
+import org.jooq.lambda.Seq;
 
 @Singleton
 @OperatorVersionBinder(startAt = StackGresVersion.V10A1, stopAt = StackGresVersion.V10)
@@ -29,13 +30,15 @@ public class OwnerReferenceDecoratorImpl implements
 
     List<OwnerReference> ownerReferences = List
         .of(ResourceUtil.getOwnerReference(cluster));
-    resources.forEach(resource -> {
-      resource.getMetadata().setOwnerReferences(ownerReferences);
-      if (resource.getKind().equals("StatefulSet")) {
-        StatefulSet sts = (StatefulSet) resource;
-        sts.getSpec().getVolumeClaimTemplates()
-            .forEach(vct -> vct.getMetadata().setOwnerReferences(ownerReferences));
-      }
-    });
+    Seq.seq(resources)
+        .filter(resource -> resource.getMetadata().getOwnerReferences().isEmpty())
+        .forEach(resource -> {
+          resource.getMetadata().setOwnerReferences(ownerReferences);
+          if (resource.getKind().equals("StatefulSet")) {
+            StatefulSet sts = (StatefulSet) resource;
+            sts.getSpec().getVolumeClaimTemplates()
+                .forEach(vct -> vct.getMetadata().setOwnerReferences(ownerReferences));
+          }
+        });
   }
 }
