@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-package io.stackgres.common.crd.sgpooling;
+package io.stackgres.common.crd.sgpooling.pgbouncer;
 
 import java.util.Map;
 import java.util.Objects;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -25,6 +26,14 @@ public class StackGresPoolingConfigPgBouncer {
   @NotEmpty(message = "pgbouncer.ini should not be empty")
   private Map<String, String> pgbouncerConf;
 
+  @JsonProperty("databases")
+  @Valid
+  private Map<String, StackGresPoolingConfigPgBouncerDatabases> databases;
+
+  @JsonProperty("users")
+  @Valid
+  private Map<String, StackGresPoolingConfigPgBouncerUsers> users;
+
   public Map<String, String> getPgbouncerConf() {
     return pgbouncerConf;
   }
@@ -33,9 +42,25 @@ public class StackGresPoolingConfigPgBouncer {
     this.pgbouncerConf = pgbouncerConf;
   }
 
+  public Map<String, StackGresPoolingConfigPgBouncerDatabases> getDatabases() {
+    return databases;
+  }
+
+  public void setDatabases(Map<String, StackGresPoolingConfigPgBouncerDatabases> databases) {
+    this.databases = databases;
+  }
+
+  public Map<String, StackGresPoolingConfigPgBouncerUsers> getUsers() {
+    return users;
+  }
+
+  public void setUsers(Map<String, StackGresPoolingConfigPgBouncerUsers> users) {
+    this.users = users;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(pgbouncerConf);
+    return Objects.hash(databases, pgbouncerConf, users);
   }
 
   @Override
@@ -47,7 +72,8 @@ public class StackGresPoolingConfigPgBouncer {
       return false;
     }
     StackGresPoolingConfigPgBouncer other = (StackGresPoolingConfigPgBouncer) obj;
-    return Objects.equals(pgbouncerConf, other.pgbouncerConf);
+    return Objects.equals(databases, other.databases)
+        && Objects.equals(pgbouncerConf, other.pgbouncerConf) && Objects.equals(users, other.users);
   }
 
   @Override

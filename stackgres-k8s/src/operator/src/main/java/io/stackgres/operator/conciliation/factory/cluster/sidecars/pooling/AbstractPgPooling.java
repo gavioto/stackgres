@@ -5,6 +5,8 @@
 
 package io.stackgres.operator.conciliation.factory.cluster.sidecars.pooling;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMapVolumeSourceBuilder;
@@ -24,7 +27,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMount;
-import io.stackgres.common.ClusterStatefulSetPath;
 import io.stackgres.common.EnvoyUtil;
 import io.stackgres.common.LabelFactory;
 import io.stackgres.common.StackGresComponent;
@@ -33,8 +35,10 @@ import io.stackgres.common.crd.sgcluster.StackGresCluster;
 import io.stackgres.common.crd.sgcluster.StackGresClusterPod;
 import io.stackgres.common.crd.sgcluster.StackGresClusterSpec;
 import io.stackgres.common.crd.sgpooling.StackGresPoolingConfig;
-import io.stackgres.common.crd.sgpooling.StackGresPoolingConfigPgBouncer;
 import io.stackgres.common.crd.sgpooling.StackGresPoolingConfigSpec;
+import io.stackgres.common.crd.sgpooling.pgbouncer.StackGresPoolingConfigPgBouncer;
+import io.stackgres.common.crd.sgpooling.pgbouncer.StackGresPoolingConfigPgBouncerDatabases;
+import io.stackgres.common.crd.sgpooling.pgbouncer.StackGresPoolingConfigPgBouncerUsers;
 import io.stackgres.operator.conciliation.cluster.StackGresClusterContext;
 import io.stackgres.operator.conciliation.factory.ContainerFactory;
 import io.stackgres.operator.conciliation.factory.ImmutableVolumePair;
@@ -45,17 +49,14 @@ import io.stackgres.operator.conciliation.factory.cluster.StatefulSetDynamicVolu
 import io.stackgres.operator.conciliation.factory.cluster.sidecars.pooling.parameters.Blocklist;
 import io.stackgres.operator.conciliation.factory.cluster.sidecars.pooling.parameters.DefaultValues;
 import org.jetbrains.annotations.NotNull;
+import org.jooq.lambda.Seq;
 
 public abstract class AbstractPgPooling
     implements ContainerFactory<StackGresClusterContainerContext>,
     VolumeFactory<StackGresClusterContext> {
 
   private static final String NAME = "pgbouncer";
-  private static final Map<String, String> DEFAULT_PARAMETERS = ImmutableMap
-      .<String, String>builder()
-      .put("listen_port", Integer.toString(EnvoyUtil.PG_POOL_PORT))
-      .put("unix_socket_dir", ClusterStatefulSetPath.PG_RUN_PATH.path())
-      .build();
+
   private final LabelFactory<StackGresCluster> labelFactory;
 
   @Inject
@@ -71,21 +72,23 @@ public abstract class AbstractPgPooling
 
   @Override
   public boolean isActivated(StackGresClusterContainerContext context) {
-    return Optional.ofNullable(context.getClusterContext().getSource().getSpec())
+    return Optional.ofNullable(context)
+        .map(StackGresClusterContainerContext::getClusterContext)
+        .map(StackGresClusterContext::getSource)
+        .map(StackGresCluster::getSpec)
         .map(StackGresClusterSpec::getPod)
         .map(StackGresClusterPod::getDisableConnectionPooling)
         .map(disable -> !disable)
-        .orElse(true);
+        .orElse(Boolean.TRUE);
   }
 
   @Override
-  public @NotNull Stream<VolumePair> buildVolumes(StackGresClusterContext context) {
+  public @NotNull Stream<VolumePair> buildVolumes(@NotNull StackGresClusterContext context) {
     return Stream.of(
         ImmutableVolumePair.builder()
             .volume(buildVolume(context))
             .source(buildSource(context))
-            .build()
-    );
+            .build());
   }
 
   public @NotNull Volume buildVolume(StackGresClusterContext context) {
@@ -97,49 +100,127 @@ public abstract class AbstractPgPooling
         .build();
   }
 
-  public @NotNull HasMetadata buildSource(StackGresClusterContext context) {
-    final StackGresCluster stackGresCluster = context.getSource();
-    Optional<StackGresPoolingConfig> pgbouncerConfig = context.getPoolingConfig();
-    Map<String, String> newParams = pgbouncerConfig.map(StackGresPoolingConfig::getSpec)
-        .map(StackGresPoolingConfigSpec::getPgBouncer)
+  public @NotNull HasMetadata buildSource(@NotNull StackGresClusterContext context) {
+    final StackGresCluster sgCluster = context.getSource();
+
+    Optional<StackGresPoolingConfigPgBouncer> pgbouncerConfig = context.getPoolingConfig()
+        .map(StackGresPoolingConfig::getSpec)
+        .map(StackGresPoolingConfigSpec::getPgBouncer);
+
+    var parameters = pgbouncerConfig
         .map(StackGresPoolingConfigPgBouncer::getPgbouncerConf)
         .orElseGet(HashMap::new);
-    // Blacklist removal
-    for (String bl : Blocklist.getBlocklistParameters()) {
-      newParams.remove(bl);
-    }
-    Map<String, String> params = new HashMap<>(DefaultValues.getDefaultValues());
 
-    for (Map.Entry<String, String> entry : newParams.entrySet()) {
-      params.put(entry.getKey(), entry.getValue());
-    }
+    var databases = pgbouncerConfig
+        .map(StackGresPoolingConfigPgBouncer::getDatabases)
+        .orElseGet(HashMap::new);
 
-    Map<String, String> pgbouncerIniParams = new LinkedHashMap<>(DEFAULT_PARAMETERS);
-    pgbouncerIniParams.putAll(params);
+    var users = pgbouncerConfig
+        .map(StackGresPoolingConfigPgBouncer::getUsers)
+        .orElseGet(HashMap::new);
 
-    String pgBouncerConfig = pgbouncerIniParams.entrySet().stream()
-        .map(entry -> entry.getKey() + " = " + entry.getValue())
-        .collect(Collectors.joining("\n"));
-
-    String configFile = "[databases]\n"
-        + " * = port = " + EnvoyUtil.PG_PORT + "\n"
+    String configFile = "\n"
+        + getDatabaseSection(databases)
         + "\n"
-        + "[pgbouncer]\n"
-        + pgBouncerConfig
+        + getUserSection(users)
+        + "\n"
+        + getPgBouncerSection(parameters)
         + "\n";
+
     Map<String, String> data = ImmutableMap.of("pgbouncer.ini", configFile);
 
-    String namespace = stackGresCluster.getMetadata().getNamespace();
+    String namespace = sgCluster.getMetadata().getNamespace();
     String configMapName = configName(context);
 
     return new ConfigMapBuilder()
         .withNewMetadata()
         .withNamespace(namespace)
         .withName(configMapName)
-        .withLabels(labelFactory.clusterLabels(stackGresCluster))
+        .withLabels(labelFactory.clusterLabels(sgCluster))
         .endMetadata()
         .withData(data)
         .build();
+  }
+
+  private String getPgBouncerSection(Map<String, String> params) {
+    // Blocklist removal
+    for (String bl : Blocklist.getBlocklistParameters()) {
+      params.remove(bl);
+    }
+
+    var parameters = new LinkedHashMap<>(DefaultValues.getDefaultValues());
+    parameters.putAll(params);
+
+    String pgBouncerConfig = parameters.entrySet().stream()
+        .map(entry -> entry.getKey() + " = " + entry.getValue())
+        .collect(Collectors.joining("\n"));
+
+    return "[pgbouncer]\n" + pgBouncerConfig;
+  }
+
+  private String getUserSection(Map<String, StackGresPoolingConfigPgBouncerUsers> users) {
+    final String usersSection = users.entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .map(entry -> {
+          final String params = Seq.of("pool_mode", "max_user_connections")
+              .map(param -> mapValues(param, entry.getValue()))
+              .filter(Optional::isPresent)
+              .map(Optional::get)
+              .reduce((first, second) -> first + " " + second)
+              .orElse("");
+          return entry.getKey() + " = " + params;
+        })
+        .collect(Collectors.joining("\n"));
+    return !users.isEmpty()
+        ? "[users]\n" + usersSection
+        : "";
+  }
+
+  private String getDatabaseSection(
+      Map<String, StackGresPoolingConfigPgBouncerDatabases> databases) {
+    final String databasesSection = databases.entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .map(entry -> {
+          final String params = Seq.of("dbname", "pool_size", "reserve_pool", "pool_mode",
+              "max_db_connections", "client_encoding", "datestyle", "timezone")
+              .map(param -> mapValues(param, entry.getValue()))
+              .concat(Optional.of("port=" + EnvoyUtil.PG_PORT))
+              .filter(Optional::isPresent)
+              .map(Optional::get)
+              .reduce((first, second) -> first + " " + second)
+              .orElse("");
+          return entry.getKey() + " = " + params;
+        })
+        .collect(Collectors.joining("\n"));
+    return !databases.isEmpty()
+        ? "[databases]\n" + databasesSection
+        : "[databases]\n" + "* = port=" + EnvoyUtil.PG_PORT + "\n";
+  }
+
+  /**
+   * This maps a parameter in lower_underscore format to the getMethod and invoke the get of the
+   * object method. A parameter like pool_mode is executed in the object like getPoolMode() and the
+   * result is returned in the format Optional[pool_mode=session].
+   *
+   * @param param name in lower_underscore case format
+   * @param values Bean to map param name to method.
+   * @return Optional with the param name and the value from the execution.
+   */
+  private Optional<String> mapValues(String param, Object values) {
+    final String methodName =
+        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, "get_" + param);
+    for (Method method : values.getClass().getMethods()) {
+      if (method.getName().equals(methodName)) {
+        try {
+          Object invoke = method.invoke(values, (Object[]) null);
+          return Optional.ofNullable(invoke).map(val -> param + "=" + val.toString());
+        } catch (IllegalAccessException | IllegalArgumentException
+            | InvocationTargetException ignore) {
+          // ignore
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   @Override
