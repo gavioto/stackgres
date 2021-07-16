@@ -325,6 +325,18 @@ svg.background circle {
     display: block;
 }
 
+.floatRight {
+    float: right;
+}
+
+.xsPad {
+    padding: 10px;
+}
+
+.pad {
+    padding: 20px;
+}
+
 /* Log in */
 
 #nav .right > div#signup {
