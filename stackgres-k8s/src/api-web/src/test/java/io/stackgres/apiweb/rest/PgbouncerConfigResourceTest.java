@@ -74,20 +74,20 @@ class PgbouncerConfigResourceTest
         "max_client_conn=100",
         "pool_mode='transaction'")
         .toString("\n"),
-        resource.getSpec().getPgBouncer().getPgbouncerConf());
+        resource.getSpec().getPgBouncer().getParameters());
     assertNotNull(resource.getStatus());
     assertNotNull(resource.getStatus().getClusters());
     assertEquals(2, resource.getStatus().getClusters().size());
     assertEquals("stackgres", resource.getStatus().getClusters().get(0));
     assertNotNull(resource.getStatus().getPgBouncer());
-    assertNotNull(resource.getStatus().getPgBouncer().getPgbouncerConf());
-    assertEquals(3, resource.getStatus().getPgBouncer().getPgbouncerConf().size());
-    assertEquals("default_pool_size", resource.getStatus().getPgBouncer().getPgbouncerConf().get(0).getParameter());
-    assertEquals("200", resource.getStatus().getPgBouncer().getPgbouncerConf().get(0).getValue());
-    assertEquals("max_client_conn", resource.getStatus().getPgBouncer().getPgbouncerConf().get(1).getParameter());
-    assertEquals("100", resource.getStatus().getPgBouncer().getPgbouncerConf().get(1).getValue());
-    assertEquals("pool_mode", resource.getStatus().getPgBouncer().getPgbouncerConf().get(2).getParameter());
-    assertEquals("'transaction'", resource.getStatus().getPgBouncer().getPgbouncerConf().get(2).getValue());
+    assertNotNull(resource.getStatus().getPgBouncer().getParameters());
+    assertEquals(3, resource.getStatus().getPgBouncer().getParameters().size());
+    assertEquals("default_pool_size", resource.getStatus().getPgBouncer().getParameters().get(0).getParameter());
+    assertEquals("200", resource.getStatus().getPgBouncer().getParameters().get(0).getValue());
+    assertEquals("max_client_conn", resource.getStatus().getPgBouncer().getParameters().get(1).getParameter());
+    assertEquals("100", resource.getStatus().getPgBouncer().getParameters().get(1).getValue());
+    assertEquals("pool_mode", resource.getStatus().getPgBouncer().getParameters().get(2).getParameter());
+    assertEquals("'transaction'", resource.getStatus().getPgBouncer().getParameters().get(2).getValue());
     assertNotNull(resource.getStatus().getPgBouncer().getDefaultParameters());
     assertIterableEquals(ImmutableList.of(
         "default_pool_size",
@@ -107,7 +107,7 @@ class PgbouncerConfigResourceTest
         "default_pool_size", "200", 
         "max_client_conn", "100",
         "pool_mode", "'transaction'"),
-        resource.getSpec().getPgBouncer().getPgbouncerConf());
+        resource.getSpec().getPgBouncer().getParameters());
   }
 
 }

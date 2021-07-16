@@ -5,16 +5,16 @@
 
 package io.stackgres.operator.validation.pooling;
 
-import java.util.HashMap;
+import java.util.Map;
 
 import javax.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.stackgres.common.crd.sgpooling.StackGresPoolingConfig;
-import io.stackgres.testutil.JsonUtil;
 import io.stackgres.operator.common.PoolingReview;
 import io.stackgres.operator.validation.ValidationPipelineTest;
 import io.stackgres.operatorframework.admissionwebhook.validating.ValidationPipeline;
+import io.stackgres.testutil.JsonUtil;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 @QuarkusTest
@@ -29,7 +29,7 @@ public class PoolingValidationPipelineTest
   public PoolingReview getConstraintViolatingReview() {
     PoolingReview review = getValidReview();
 
-    review.getRequest().getObject().getSpec().getPgBouncer().setPgbouncerConf(new HashMap<>());
+    review.getRequest().getObject().getSpec().getPgBouncer().setParameters(Map.of());
 
     return review;
   }

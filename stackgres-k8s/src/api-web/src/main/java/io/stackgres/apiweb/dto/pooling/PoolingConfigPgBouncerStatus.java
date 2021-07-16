@@ -24,18 +24,18 @@ public class PoolingConfigPgBouncerStatus {
   @JsonProperty("pgbouncer.ini")
   @NotNull(message = "pgbouncer.ini is required")
   @Valid
-  private List<PgBouncerIniParameter> pgbouncerConf;
+  private List<PgBouncerIniParameter> parameters;
 
   @JsonProperty("defaultParameters")
   @NotNull(message = "defaultParameters is required")
   private List<String> defaultParameters;
 
-  public List<PgBouncerIniParameter> getPgbouncerConf() {
-    return pgbouncerConf;
+  public List<PgBouncerIniParameter> getParameters() {
+    return parameters;
   }
 
-  public void setPgbouncerConf(List<PgBouncerIniParameter> pgbouncerConf) {
-    this.pgbouncerConf = pgbouncerConf;
+  public void setParameters(List<PgBouncerIniParameter> parameters) {
+    this.parameters = parameters;
   }
 
   public List<String> getDefaultParameters() {

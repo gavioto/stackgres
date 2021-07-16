@@ -5,14 +5,13 @@
 
 package io.stackgres.operator.mutation.pgbouncer;
 
-import java.util.HashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
+import io.stackgres.common.crd.sgpooling.StackGresPoolingConfig;
 import io.stackgres.operator.common.PoolingReview;
 import io.stackgres.operator.mutation.DefaultValuesMutator;
 import io.stackgres.operator.mutation.DefaultValuesMutatorTest;
-import io.stackgres.common.crd.sgpooling.StackGresPoolingConfig;
 import io.stackgres.testutil.JsonUtil;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,7 +28,7 @@ class PgBouncerDefaultValuesMutatorTest extends DefaultValuesMutatorTest<StackGr
   protected PoolingReview getEmptyReview() {
     PoolingReview review = JsonUtil
         .readFromJson("pooling_allow_request/create.json", PoolingReview.class);
-    review.getRequest().getObject().getSpec().getPgBouncer().setPgbouncerConf(new HashMap<>());
+    review.getRequest().getObject().getSpec().getPgBouncer().setParameters(Map.of());
     return review;
   }
 

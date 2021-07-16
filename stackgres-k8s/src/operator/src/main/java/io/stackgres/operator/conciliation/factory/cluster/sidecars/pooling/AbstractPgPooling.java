@@ -60,8 +60,7 @@ public abstract class AbstractPgPooling
   private final LabelFactory<StackGresCluster> labelFactory;
 
   @Inject
-  protected AbstractPgPooling(
-      LabelFactory<StackGresCluster> labelFactory) {
+  protected AbstractPgPooling(LabelFactory<StackGresCluster> labelFactory) {
     this.labelFactory = labelFactory;
   }
 
@@ -84,11 +83,10 @@ public abstract class AbstractPgPooling
 
   @Override
   public @NotNull Stream<VolumePair> buildVolumes(@NotNull StackGresClusterContext context) {
-    return Stream.of(
-        ImmutableVolumePair.builder()
-            .volume(buildVolume(context))
-            .source(buildSource(context))
-            .build());
+    return Stream.of(ImmutableVolumePair.builder()
+        .volume(buildVolume(context))
+        .source(buildSource(context))
+        .build());
   }
 
   public @NotNull Volume buildVolume(StackGresClusterContext context) {
@@ -108,7 +106,7 @@ public abstract class AbstractPgPooling
         .map(StackGresPoolingConfigSpec::getPgBouncer);
 
     var parameters = pgbouncerConfig
-        .map(StackGresPoolingConfigPgBouncer::getPgbouncerConf)
+        .map(StackGresPoolingConfigPgBouncer::getParameters)
         .orElseGet(HashMap::new);
 
     var databases = pgbouncerConfig
@@ -144,9 +142,7 @@ public abstract class AbstractPgPooling
 
   private String getPgBouncerSection(Map<String, String> params) {
     // Blocklist removal
-    for (String bl : Blocklist.getBlocklistParameters()) {
-      params.remove(bl);
-    }
+    Blocklist.getBlocklistParameters().forEach(bl -> params.remove(bl));
 
     var parameters = new LinkedHashMap<>(DefaultValues.getDefaultValues());
     parameters.putAll(params);
@@ -206,9 +202,9 @@ public abstract class AbstractPgPooling
    * @param values Bean to map param name to method.
    * @return Optional with the param name and the value from the execution.
    */
-  private Optional<String> mapValues(String param, Object values) {
-    final String methodName =
-        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, "get_" + param);
+  @NotNull
+  Optional<String> mapValues(@NotNull String param, @NotNull Object values) {
+    String methodName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, "get_" + param);
     for (Method method : values.getClass().getMethods()) {
       if (method.getName().equals(methodName)) {
         try {
