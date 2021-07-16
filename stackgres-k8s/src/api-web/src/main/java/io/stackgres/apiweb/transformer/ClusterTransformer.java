@@ -135,8 +135,7 @@ public class ClusterTransformer
     return context.getBoolean(WebApiProperty.GRAFANA_EMBEDDED);
   }
 
-  @Nullable
-  public StackGresClusterSpec getCustomResourceSpec(@Nullable ClusterSpec source) {
+  private StackGresClusterSpec getCustomResourceSpec(ClusterSpec source) {
     if (source == null) {
       return null;
     }
@@ -359,8 +358,7 @@ public class ClusterTransformer
     return transformation;
   }
 
-  @Nullable
-  public ClusterSpec getResourceSpec(@Nullable StackGresClusterSpec source) {
+  private ClusterSpec getResourceSpec(StackGresClusterSpec source) {
     if (source == null) {
       return null;
     }
@@ -570,8 +568,7 @@ public class ClusterTransformer
     return transformation;
   }
 
-  @Nullable
-  public ClusterStatus getResourceStatus(@Nullable StackGresClusterStatus source) {
+  private ClusterStatus getResourceStatus(StackGresClusterStatus source) {
     if (source == null) {
       return null;
     }
@@ -586,8 +583,8 @@ public class ClusterTransformer
     }
 
     transformation.setDbOps(getDbOpsStatus(source.getDbOps()));
-    if (source.getToInstallPostgresExtensions() != null) {
-      transformation.setToInstallPostgresExtension(source.getToInstallPostgresExtensions().stream()
+    if (source.getPostgresExtensions() != null) {
+      transformation.setPostgresExtension(source.getPostgresExtensions().stream()
           .map(this::getClusterInstalledExtension).collect(ImmutableList.toImmutableList()));
     }
 

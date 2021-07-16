@@ -114,7 +114,7 @@ public class ExtensionReconciliationTest {
     when(context.getCluster()).thenReturn(cluster);
     when(context.getExtensions()).thenReturn(
         Optional.ofNullable(cluster.getStatus())
-        .map(StackGresClusterStatus::getToInstallPostgresExtensions)
+        .map(StackGresClusterStatus::getPostgresExtensions)
         .map(ImmutableList::copyOf)
         .orElse(ImmutableList.of()));
     return context;
@@ -126,8 +126,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
     });
     when(extensionManager.getExtensionInstaller(any(), any(StackGresClusterInstalledExtension.class)))
         .thenReturn(extensionInstaller);
@@ -169,8 +169,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
     });
     when(extensionManager.getExtensionInstaller(any(), any(StackGresClusterInstalledExtension.class)))
         .thenReturn(extensionInstaller);
@@ -212,8 +212,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
       cluster.getStatus().setPodStatuses(new ArrayList<>());
       StackGresClusterPodStatus podStatus = new StackGresClusterPodStatus();
       podStatus.setName("test-0");
@@ -261,8 +261,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
     });
     when(extensionManager.getExtensionInstaller(any(), any(StackGresClusterInstalledExtension.class)))
         .thenReturn(extensionInstaller);
@@ -302,8 +302,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
     });
     when(extensionManager.getExtensionInstaller(any(), any(StackGresClusterInstalledExtension.class)))
         .thenReturn(extensionInstaller);
@@ -349,8 +349,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
       cluster.getStatus().setPodStatuses(new ArrayList<>());
       StackGresClusterPodStatus podStatus = new StackGresClusterPodStatus();
       podStatus.setName("test-0");
@@ -397,8 +397,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
       cluster.getStatus().setPodStatuses(new ArrayList<>());
       StackGresClusterPodStatus podStatus = new StackGresClusterPodStatus();
       podStatus.setName("test-0");
@@ -451,8 +451,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
       cluster.getStatus().setPodStatuses(new ArrayList<>());
       StackGresClusterPodStatus podStatus = new StackGresClusterPodStatus();
       podStatus.setName("test-0");
@@ -503,8 +503,8 @@ public class ExtensionReconciliationTest {
     ExtensionReconciliatorContext context = getContext(cluster -> {
       cluster.getSpec().setPostgresExtensions(null);
       cluster.setStatus(new StackGresClusterStatus());
-      cluster.getStatus().setToInstallPostgresExtensions(new ArrayList<>());
-      cluster.getStatus().getToInstallPostgresExtensions().add(installedExtension);
+      cluster.getStatus().setPostgresExtensions(new ArrayList<>());
+      cluster.getStatus().getPostgresExtensions().add(installedExtension);
       cluster.getStatus().setPodStatuses(new ArrayList<>());
       StackGresClusterPodStatus podStatus = new StackGresClusterPodStatus();
       podStatus.setName("test-0");
