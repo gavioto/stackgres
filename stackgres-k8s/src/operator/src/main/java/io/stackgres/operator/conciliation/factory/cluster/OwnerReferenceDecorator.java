@@ -21,13 +21,12 @@ import org.jooq.lambda.Seq;
 
 @Singleton
 @OperatorVersionBinder(startAt = StackGresVersion.V10A1, stopAt = StackGresVersion.V10)
-public class OwnerReferenceDecoratorImpl implements
+public class OwnerReferenceDecorator implements
     Decorator<StackGresCluster> {
 
   @Override
   public void decorate(StackGresCluster cluster,
                        Iterable<? extends HasMetadata> resources) {
-
     List<OwnerReference> ownerReferences = List
         .of(ResourceUtil.getOwnerReference(cluster));
     Seq.seq(resources)
