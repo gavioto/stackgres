@@ -41,6 +41,8 @@ spec:
         type: string
         jsonPath: .spec.configurations.sgPostgresConfig
         priority: 1
+      subresources:
+        status: { }
       schema:
         openAPIV3Schema:
           type: object
@@ -633,5 +635,3 @@ spec:
                           type: string
                           description: |
                             The primary instance that this operation is targetting
-      subresources:
-        status: { }
