@@ -7,6 +7,8 @@ package io.stackgres.common;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +30,7 @@ import java.util.stream.Collectors;
 import javax.enterprise.inject.spi.CDI;
 import javax.xml.bind.DatatypeConverter;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import io.fabric8.kubernetes.api.model.LoadBalancerIngress;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -258,6 +262,33 @@ public class StackGresUtil {
           + '.' + DNS_SERVICE;
     }
     return serviceDns;
+  }
+
+  /**
+   * This maps a parameter in lower_underscore format to the getMethod and invoke the get of the
+   * object method. A parameter like pool_mode is executed in the object like getPoolMode() and the
+   * result is returned in the format Optional[pool_mode=session].
+   *
+   * @param param name in lower_underscore case format
+   * @param values Bean to map param name to method.
+   * @return Optional with the param name and the value from the execution.
+   */
+  @NotNull
+  public static Optional<String> mapMethodParameterValues(@NotNull String param,
+      @NotNull Object values) {
+    String methodName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, "get_" + param);
+    for (Method method : values.getClass().getMethods()) {
+      if (method.getName().equals(methodName)) {
+        try {
+          Object invoke = method.invoke(values, (Object[]) null);
+          return Optional.ofNullable(invoke).map(val -> param + "=" + val.toString());
+        } catch (IllegalAccessException | IllegalArgumentException
+            | InvocationTargetException ignore) {
+          // ignore
+        }
+      }
+    }
+    return Optional.empty();
   }
 
 }
