@@ -264,31 +264,4 @@ public class StackGresUtil {
     return serviceDns;
   }
 
-  /**
-   * This maps a parameter in lower_underscore format to the getMethod and invoke the get of the
-   * object method. A parameter like pool_mode is executed in the object like getPoolMode() and the
-   * result is returned in the format Optional[pool_mode=session].
-   *
-   * @param param name in lower_underscore case format
-   * @param values Bean to map param name to method.
-   * @return Optional with the param name and the value from the execution.
-   */
-  @NotNull
-  public static Optional<String> mapMethodParameterValues(@NotNull String param,
-      @NotNull Object values) {
-    String methodName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, "get_" + param);
-    for (Method method : values.getClass().getMethods()) {
-      if (method.getName().equals(methodName)) {
-        try {
-          Object invoke = method.invoke(values, (Object[]) null);
-          return Optional.ofNullable(invoke).map(val -> param + "=" + val.toString());
-        } catch (IllegalAccessException | IllegalArgumentException
-            | InvocationTargetException ignore) {
-          // ignore
-        }
-      }
-    }
-    return Optional.empty();
-  }
-
 }

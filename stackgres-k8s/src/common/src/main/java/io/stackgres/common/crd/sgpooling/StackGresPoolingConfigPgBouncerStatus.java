@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-package io.stackgres.common.crd.sgpooling.pgbouncer;
+package io.stackgres.common.crd.sgpooling;
 
 import java.util.List;
 import java.util.Objects;
